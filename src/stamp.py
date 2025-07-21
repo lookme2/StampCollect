@@ -9,10 +9,9 @@ class Stamp:
         self.usedPrice = None # Used price can be set later
         self.mintPrice = None # Mint price can be set later
 
-
     def __repr__(self):
         status = "Used" if self.used else "Unused"
-        return f"<Stamp: {self.name}, Scott #{self.scott_number}, {status}>"
+        return f"<Stamp: {self.description}, Scott #{self.scott_number}, {status}>"
 
 class StampCollection:
     def __init__(self):
