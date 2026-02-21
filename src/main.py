@@ -1,7 +1,9 @@
+from database import init_db
 from gui import StampCollectionGUI
 
 
 def main():
+    init_db()
     StampCollectionGUI().run()
 
 

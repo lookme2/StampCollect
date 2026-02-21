@@ -1,14 +1,15 @@
+import os
 import FreeSimpleGUI as sg
 from stamp import Stamp, StampCollection
-import sqlite3
-import os
+import database
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "stamps.db")
+
 
 class StampCollectionGUI:
     def __init__(self):
         self.collection = StampCollection()
-        self._init_db()
+        self.conn = database.init_db(DB_PATH)
         self._load_from_db()
         self.layout = [
             [sg.Text("Description"), sg.Input(key="description")],
@@ -19,39 +20,25 @@ class StampCollectionGUI:
         ]
         self.window = sg.Window("Stamp Collection", self.layout)
 
-    def _init_db(self):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS stamps (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                description TEXT,
-                scott_number TEXT,
-                used INTEGER
-            )
-        ''')
-        conn.commit()
-        conn.close()
+    def _save_to_db(self, stamp: Stamp) -> None:
+        # Map simple GUI fields into the general stamps table
+        condition = "Used" if getattr(stamp, "used", False) else "Mint"
+        database.add_stamp(
+            self.conn,
+            name=stamp.description,
+            catalog_number=stamp.scott_number,
+            condition=condition,
+        )
 
-    def _save_to_db(self, stamp):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('''
-            INSERT INTO stamps (description, scott_number, used)
-            VALUES (?, ?, ?)
-        ''', (stamp.description, stamp.scott_number, int(stamp.used)))
-        conn.commit()
-        conn.close()
-
-    def _load_from_db(self):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('SELECT description, scott_number, used FROM stamps')
-        rows = c.fetchall()
-        for desc, scott, used in rows:
-            stamp = Stamp(desc, scott, bool(used))
+    def _load_from_db(self) -> None:
+        rows = database.list_stamps(self.conn, limit=1000)
+        for r in rows:
+            name = r["name"] or ""
+            catalog = r["catalog_number"] or ""
+            condition = (r["condition"] or "").lower()
+            used = True if "used" in condition else False
+            stamp = Stamp(name, catalog, used)
             self.collection.add_stamp(stamp)
-        conn.close()
 
     def run(self):
         while True:
@@ -61,7 +48,7 @@ class StampCollectionGUI:
             elif event == "Add Stamp":
                 desc = values["description"]
                 scott = values["scott_number"]
-                used = values["used"]
+                used = values.get("used", False)
                 if desc and scott:
                     stamp = Stamp(desc, scott, used)
                     self.collection.add_stamp(stamp)
