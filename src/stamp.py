@@ -1,5 +1,5 @@
 class Stamp:
-    def __init__(self, description, scott_number, used=False):
+    def __init__(self, description, scott_number, used=False, image_path=None):
         self.description = description
         self.scott_number = scott_number
         self.used = used
@@ -9,6 +9,7 @@ class Stamp:
         self.year = None
         self.usedPrice = None
         self.mintPrice = None
+        self.image_path = image_path
 
     def __repr__(self):
         status = "Used" if self.used else "Unused"
